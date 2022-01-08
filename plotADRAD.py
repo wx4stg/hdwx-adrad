@@ -3,6 +3,7 @@
 # Created 7 July 2021 by Sam Gardner <stgardner4@tamu.edu>
 
 from datetime import datetime as dt
+from time import strftime
 import pyart
 from matplotlib import pyplot as plt
 from os import path, getcwd, listdir
@@ -14,6 +15,8 @@ import warnings
 from matplotlib import image as mpimage
 import sys
 from pathlib import Path
+from atomicwrites import atomic_write
+import json
 
 # plotADRAD.py <scantime>
 # Get the path to this script, that'll get used a lot.
@@ -21,6 +24,122 @@ basePath = path.abspath(path.dirname(__file__))
 # Get the time of the radar file we want to open from arg1.
 requestedDatetime = dt.strptime(sys.argv[1], "%Y%m%d%H%M")
 
+def writeJson(productID, scanTime, gisInfo):
+    if productID == 120:
+        productDesc = "ADRAD 0.5° Reflectivity PPI"
+        productPath = "gisproducts/radar/ADRAD/"+str(productID)
+        isGIS = True
+    elif productID == 121:
+        productDesc = "ADRAD 0.5° Reflectivity PPI"
+        productPath = "products/radar/ADRAD/"+str(productID)
+        isGIS = False
+    elif productID == 122:
+        productDesc = "ADRAD 0.5° Reflectivity PPI (Quality-controlled)"
+        productPath = "gisproducts/radar/ADRAD/"+str(productID)
+        isGIS = True
+    elif productID == 123:
+        productDesc = "ADRAD 0.5° Reflectivity PPI (Quality-controlled)"
+        productPath = "products/radar/ADRAD/"+str(productID)
+        isGIS = False
+    elif productID == 124:
+        productDesc = "ADRAD 0.5° Signal Quality Index"
+        productPath = "products/radar/ADRAD/"+str(productID)
+        isGIS = False
+    elif productID == 125:
+        productDesc = "ADRAD 0.5° Velocity PPI"
+        productPath = "gisproducts/radar/ADRAD/"+str(productID)
+        isGIS = True
+    elif productID == 126:
+        productDesc = "ADRAD 0.5° Velocity PPI"
+        productPath = "products/radar/ADRAD/"+str(productID)
+        isGIS = False
+    publishTime = dt.utcnow()
+    productDict = {
+        "productID" : productID,
+        "productDescription" : productDesc,
+        "productPath" : productPath,
+        "productReloadTime" : 60,
+        "lastReloadTime" : int(publishTime.strftime("%Y%m%d%H%M")),
+        "isForecast" : False,
+        "isGIS" : isGIS,
+        "fileExtension" : "png"
+    }
+    productDictJsonPath = path.join(basePath, "output", "metadata", str(productID)+".json")
+    Path(path.dirname(productDictJsonPath)).mkdir(parents=True, exist_ok=True)
+    with atomic_write(productDictJsonPath, overwrite=True) as jsonWrite:
+        json.dump(productDict, jsonWrite, indent=4)
+    runPathExtension = scanTime.strftime("%Y/%m/%d/%H00/")
+    # Now we need to write a json for the product run in output/metadata/products/<productID>/<runTime>.json
+    productRunDictPath = path.join(basePath, "output", "metadata", "products", str(productID), scanTime.strftime("%Y%m%d%H00")+".json")
+    # Create parent directory if it doesn't already exist.
+    Path(path.dirname(productRunDictPath)).mkdir(parents=True, exist_ok=True)
+    # If the json file already exists, read it in to to discover which frames have already been generated
+    if path.exists(productRunDictPath):
+        with open(productRunDictPath, "r") as jsonRead:
+            oldData = json.load(jsonRead)
+        # Add previously generated frames to a list, framesArray
+        framesArray = oldData["productFrames"]
+    else:
+        # If that file didn't exist, then create an empty list instead
+        framesArray = list()
+    # Now we need to add the frame we just wrote, as well as any that exist in the output directory that don't have metadata yet. 
+    # To do this, we first check if the output directory is not empty.
+    productRunPath = path.join(basePath, "output", productPath, runPathExtension)
+    if len(listdir(productRunPath)) > 0:
+        # If there are files inside, list them all
+        frameNames = listdir(productRunPath)
+        # get an array of integers representing the minutes past the hour of frames that have already been generated
+        frameMinutes = [int(framename.replace(".png", "")) for framename in frameNames]
+        # Loop through the previously-generated minutes and generate metadata for each
+        for frameMin in frameMinutes:
+            frmDict = {
+                "fhour" : 0, # forecast hour is 0 for non-forecasts
+                "filename" : str(frameMin)+".png",
+                "gisInfo" : gisInfo,
+                "valid" : int(scanTime.strftime("%Y%m%d%H00"))+frameMin
+            }
+            # If this dictionary isn't already in the framesArray, add it
+            if frmDict not in framesArray:
+                framesArray.append(frmDict)
+    productRunDict = {
+        "publishTime" : publishTime.strftime("%Y%m%d%H%M"),
+        "pathExtension" : runPathExtension,
+        "runName" : scanTime.strftime("%d %b %Y %HZ"),
+        "availableFrameCount" : len(framesArray),
+        "totalFrameCount" : len(framesArray),
+        "productFrames" : sorted(framesArray, key=lambda dict: dict["valid"]) # productFramesArray, sorted by increasing valid Time
+    }
+    with atomic_write(productRunDictPath, overwrite=True) as jsonWrite:
+        json.dump(productRunDict, jsonWrite, indent=4)
+    # Now we need to create a dictionary for the product type (TAMU)
+    productTypeID = 1
+    # Output for this json is output/metadata/productTypes/1.json
+    productTypeDictPath = path.join(basePath, "output/metadata/productTypes/"+str(productTypeID)+".json")
+    # Create output directory if it doesn't already exist
+    Path(path.dirname(productTypeDictPath)).mkdir(parents=True, exist_ok=True)
+    # Create empty list that will soon hold a dict for each of the products generated by this script
+    productsInType = list()
+    # If the productType json file already exists, read it in to discover which products it contains
+    if path.exists(productTypeDictPath):
+        with open(productTypeDictPath, "r") as jsonRead:
+            oldProductTypeDict = json.load(jsonRead)
+        # Add all of the products from the json file into the productsInType list...
+        for productInOldDict in oldProductTypeDict["products"]:
+            # ...except for the one that's currently being generated (prevents duplicating it)
+            if productInOldDict["productID"] != productID:
+                productsInType.append(productInOldDict)
+    # Add the productDict for the product we just generated
+    productsInType.append(productDict)
+    # Create productType Dict
+    productTypeDict = {
+        "productTypeID" : productTypeID,
+        "productTypeDescription" : "TAMU",
+        "products" : sorted(productsInType, key=lambda dict: dict["productID"]) # productsInType, sorted by productID
+    }
+    # Write productType dict to json
+    with open(productTypeDictPath, "w") as jsonWrite:
+        json.dump(productTypeDict, jsonWrite, indent=4)
+    
 
 def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius=160, rangeRingStep=160):
     # Create figure and axes
@@ -57,6 +176,14 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Save GIS Image
     extent = ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
+    # Get scan time for metadata
+    radarScanDT = pyart.util.datetime_from_radar(radar)
+    # Get lat/lon bounds for metadata
+    point1 = ccrs.PlateCarree().transform_point(ax.get_extent()[0], ax.get_extent()[2], ccrs.epsg(3857))
+    point2 = ccrs.PlateCarree().transform_point(ax.get_extent()[1], ax.get_extent()[3], ccrs.epsg(3857))
+    gisInfo = [str(point1[1])+","+str(point1[0]), str(point2[1])+","+str(point2[0])]
+    # Write metadata for GIS Image
+    writeJson(productID, radarScanDT, gisInfo)
     # Add counties
     ax.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
     # Give our plot a title, we'll start with an emtpy string
@@ -107,9 +234,10 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     lax.imshow(atmoLogo)
     # Force image size to 1808p
     fig.set_size_inches(1920*px, 1080*px)
-    staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
+    staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
     fig.savefig(staticSaveLocation)
+    writeJson(productID+1, radarScanDT, ["0,0", "0,0"])
     plt.close(fig)
 
 if __name__ == "__main__":
