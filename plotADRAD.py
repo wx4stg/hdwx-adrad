@@ -251,6 +251,27 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
     fig.savefig(staticSaveLocation)
     writeJson(productID+1, radarScanDT, ["0,0", "0,0"])
+    if productID == 122:
+        sqiFig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw=dict(projection=ccrs.epsg(3857)))
+        sqicmap = plt.get_cmap("rainbow")
+        ADRADMapDisplay.plot_ppi_map("reflectivity", norm=norm, cmap=cmap, title_flag=True, colorbar_flag=False, ax=ax1, fig=sqiFig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=None, embelish=True)
+        reflHandle = ax1.get_children()[0]
+        ax1.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
+        cbax1 = sqiFig.add_axes([ax1.get_position().x0, 0.075, (ax1.get_position().width/3), .02])
+        sqiFig.colorbar(reflHandle, cax=cbax1, orientation="horizontal")
+        cbax1.set_xlabel("Reflectivity (dBZ)")
+        ADRADMapDisplay.plot_ppi_map("normalized_coherent_power", mask_tuple=("reflectivity", 1), vmin=0, vmax=1, cmap=sqicmap, title_flag=True, colorbar_flag=False, ax=ax2, fig=sqiFig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=None, embelish=True)
+        sqiHandle = ax2.get_children()[0]
+        ax2.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
+        cbax2 = sqiFig.add_axes([ax2.get_position().x0, 0.075, (ax2.get_position().width/3), .02])
+        sqiFig.colorbar(sqiHandle, cax=cbax2, orientation="horizontal")
+        cbax2.set_xlabel("Signal Quality Index")
+        sqiFig.set_size_inches(1920*px, 1080*px)
+        staticSQICompSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+2), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
+        Path(path.dirname(staticSQICompSaveLocation)).mkdir(parents=True, exist_ok=True)
+        sqiFig.savefig(staticSQICompSaveLocation)
+        writeJson(productID+2, radarScanDT, ["0,0", "0,0"])
+
     plt.close(fig)
 
 if __name__ == "__main__":
