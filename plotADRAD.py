@@ -3,10 +3,9 @@
 # Created 7 July 2021 by Sam Gardner <stgardner4@tamu.edu>
 
 from datetime import datetime as dt
-from time import strftime
 import pyart
 from matplotlib import pyplot as plt
-from os import path, getcwd, listdir
+from os import path, listdir, remove
 from cartopy import crs as ccrs
 from metpy.plots import ctables
 from metpy.plots import USCOUNTIES
@@ -23,6 +22,20 @@ import json
 basePath = path.abspath(path.dirname(__file__))
 # Get the time of the radar file we want to open from arg1.
 requestedDatetime = dt.strptime(sys.argv[1], "%Y%m%d%H%M")
+
+def writeToStatus(stringToWrite):
+    print(stringToWrite)
+    stringToWrite = stringToWrite+"\n"
+    if path.exists(path.join(basePath, "status.txt")):
+        currentStatusFile = open(path.join(basePath, "status.txt"), "r")
+        currentStr = open(path.join(basePath, "status.txt"), "r").read()
+        currentStatusFile.close()
+    else:
+        currentStr = ""
+    if stringToWrite not in currentStr:
+        with open(path.join(basePath, "status.txt"), "a") as statw:
+            statw.write(stringToWrite)
+            statw.close()
 
 def writeJson(productID, scanTime, gisInfo):
     if productID == 120:
@@ -259,4 +272,6 @@ if __name__ == "__main__":
         fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
     # Make the plots!
     for (fieldToPlot, units, productID, gateFilter) in fieldsToPlot:
+        writeToStatus("Plotting "+fieldToPlot+" "+radarFileToPlot)
         plot_radar(radarObj, fieldToPlot, units, productID, gateFilter=gateFilter)
+    remove(radarFileToPlot)
