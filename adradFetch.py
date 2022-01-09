@@ -46,6 +46,9 @@ if __name__ == '__main__':
         writeToStatus("Checking: "+availFile)
         if "TAMU" not in availFile:
             continue
+        dlPath = path.join(outPath, availFile)
+        if path.exists(dlPath):
+            continue
         scanTime = dt.strptime(availFile, "TAMU_%Y%m%d_%H%M")
         metadataPath = path.join(basePath, "output", "metadata", "products", "120", scanTime.strftime("%Y%m%d%H00")+".json")
         if path.exists(metadataPath):
@@ -55,9 +58,6 @@ if __name__ == '__main__':
             [validTimes.append(productFrame["valid"]) for productFrame in runData["productFrames"]]
             if int(scanTime.strftime("%Y%m%d%H%M")) in validTimes:
                 continue
-        dlPath = path.join(outPath, availFile)
-        if path.exists(dlPath):
-            continue
         writeToStatus("Downloading... "+availFile)
         radarData = requests.get("http://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
         with open(dlPath, "wb") as f:
