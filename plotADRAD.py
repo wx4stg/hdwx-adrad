@@ -259,7 +259,11 @@ if __name__ == "__main__":
     # Get file path to the IRIS data file we want to open and make plots
     radarFileToPlot = path.join(radarDataDir, requestedDatetime.strftime("TAMU_%Y%m%d_%H%M"))
     # Read in the radar data
-    radarObj = pyart.io.read(radarFileToPlot)
+    try: 
+        radarObj = pyart.io.read(radarFileToPlot)
+    except Exception as e:
+        remove(radarFileToPlot)
+        exit()
     # List of fields to plot formatted as (field, unit, productID)
     fieldsToPlot = [("Reflectivity", "dBZ", 120, None), ("Velocity", "m/s", 125, None)]
     # Now we check to see if SQI (or "normalized coherent power") data was saved in the radar file. If available, filter reflectivity and add it back to the radar object
