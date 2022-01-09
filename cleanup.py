@@ -39,4 +39,5 @@ if __name__ == "__main__":
                     remove(filepath)
                     writeToStatus(filepath+" deleted.")
     remove(path.join(basePath, "status.txt"))
-    remove(path.join(basePath, "plotcmds.txt"))
+    if path.exists(path.join(basePath, "plotcmds.txt")):
+        remove(path.join(basePath, "plotcmds.txt"))
