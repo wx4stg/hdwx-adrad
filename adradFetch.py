@@ -60,9 +60,11 @@ if __name__ == '__main__':
                 continue
         writeToStatus("Downloading... "+availFile)
         radarData = requests.get("http://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
-        with open(dlPath, "wb") as f:
-            f.write(radarData.content)
-        writeToStatus(availFile+" Succeeded!")
-        writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
-
+        if radarData.status_code == 200:
+            with open(dlPath, "wb") as f:
+                f.write(radarData.content)
+            writeToStatus(availFile+" Succeeded!")
+            writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
+        else:
+            writeToStatus(availFile+" failed "+radarData.content.decode())
     
