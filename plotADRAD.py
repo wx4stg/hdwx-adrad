@@ -181,7 +181,10 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Save GIS-Aware figure now
     outputBase = path.join(basePath, "output")
     # Get scan time for metadata
-    radarScanDT = pyart.util.datetime_from_radar(radar)
+    if requestedDatetime is None:
+        radarScanDT = pyart.util.datetime_from_radar(radar)
+    else:
+        radarScanDT = requestedDatetime
     # output/gisproducts/radar/ADRAD/productID/<year>/<month>/<day>/<hour>00/<minute>.png
     gisSaveLocation = path.join(outputBase, "gisproducts", "radar", "ADRAD", str(productID), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     # Create parent directory if it doesn't already exist
