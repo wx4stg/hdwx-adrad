@@ -20,8 +20,6 @@ import json
 # plotADRAD.py <scantime>
 # Get the path to this script, that'll get used a lot.
 basePath = path.abspath(path.dirname(__file__))
-# Get the time of the radar file we want to open from arg1.
-requestedDatetime = dt.strptime(sys.argv[1], "%Y%m%d%H%M")
 
 def writeToStatus(stringToWrite):
     print(stringToWrite)
@@ -182,15 +180,15 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
         ADRADMapDisplay.plot_range_rings(range(0, plotRadius+1, rangeRingStep), col="gray", ls="dotted")
     # Save GIS-Aware figure now
     outputBase = path.join(basePath, "output")
+    # Get scan time for metadata
+    radarScanDT = pyart.util.datetime_from_radar(radar)
     # output/gisproducts/radar/ADRAD/productID/<year>/<month>/<day>/<hour>00/<minute>.png
-    gisSaveLocation = path.join(outputBase, "gisproducts", "radar", "ADRAD", str(productID), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
+    gisSaveLocation = path.join(outputBase, "gisproducts", "radar", "ADRAD", str(productID), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     # Create parent directory if it doesn't already exist
     Path(path.dirname(gisSaveLocation)).mkdir(parents=True, exist_ok=True)
     # Save GIS Image
     extent = ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
-    # Get scan time for metadata
-    radarScanDT = pyart.util.datetime_from_radar(radar)
     # Get lat/lon bounds for metadata
     point1 = ccrs.PlateCarree().transform_point(ax.get_extent()[0], ax.get_extent()[2], ccrs.epsg(3857))
     point2 = ccrs.PlateCarree().transform_point(ax.get_extent()[1], ax.get_extent()[3], ccrs.epsg(3857))
@@ -247,7 +245,7 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     lax.imshow(atmoLogo)
     # Force image size to 1808p
     fig.set_size_inches(1920*px, 1080*px)
-    staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
+    staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
     fig.savefig(staticSaveLocation)
     writeJson(productID+1, radarScanDT, ["0,0", "0,0"])
@@ -267,36 +265,42 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
         sqiFig.colorbar(sqiHandle, cax=cbax2, orientation="horizontal")
         cbax2.set_xlabel("Signal Quality Index")
         sqiFig.set_size_inches(1920*px, 1080*px)
-        staticSQICompSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+2), requestedDatetime.strftime("%Y"), requestedDatetime.strftime("%m"), requestedDatetime.strftime("%d"), requestedDatetime.strftime("%H00"), requestedDatetime.strftime("%M.png"))
+        staticSQICompSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+2), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
         Path(path.dirname(staticSQICompSaveLocation)).mkdir(parents=True, exist_ok=True)
         sqiFig.savefig(staticSQICompSaveLocation)
         writeJson(productID+2, radarScanDT, ["0,0", "0,0"])
-
     plt.close(fig)
 
 if __name__ == "__main__":
     # Get path to input directory
     radarDataDir = path.join(basePath, "radarData")
-    # Get file path to the IRIS data file we want to open and make plots
-    radarFileToPlot = path.join(radarDataDir, requestedDatetime.strftime("TAMU_%Y%m%d_%H%M"))
-    # Read in the radar data
-    try: 
-        radarObj = pyart.io.read(radarFileToPlot)
-    except Exception as e:
+    if len(sys.argv) > 1:
+        # Get the time of the radar file we want to open from arg1.
+        requestedDatetime = dt.strptime(sys.argv[1], "%Y%m%d%H%M")
+        # Get file path to the IRIS data file we want to open and make plots
+        radFileName = path.join(radarDataDir, requestedDatetime.strftime("TAMU_%Y%m%d_%H%M"))
+        radarFilesToPlot = [radFileName]
+    else:
+        radarFilesToPlot = [path.join(radarDataDir, radFileName) for radFileName in sorted(listdir(radarDataDir))]
+    for radarFileToPlot in radarFilesToPlot:
+        # Read in the radar data
+        try: 
+            radarObj = pyart.io.read(radarFileToPlot)
+        except Exception as e:
+            remove(radarFileToPlot)
+            exit()
+        # List of fields to plot formatted as (field, unit, productID)
+        fieldsToPlot = [("Reflectivity", "dBZ", 120, None), ("Velocity", "m/s", 125, None)]
+        # Now we check to see if SQI (or "normalized coherent power") data was saved in the radar file. If available, filter reflectivity and add it back to the radar object
+        if "normalized_coherent_power" in radarObj.fields.keys():
+            sqiValid = radarObj.fields["normalized_coherent_power"]["data"]
+            sqiValid = np.where(sqiValid > 0.5, 1, 0)
+            finalRefl = np.multiply(radarObj.fields["reflectivity"]["data"], sqiValid)
+            radarObj.add_field_like("reflectivity", "reflectivity_filtered", finalRefl)
+            despekFilter = pyart.correct.despeckle_field(radarObj, "reflectivity_filtered")
+            fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
+        # Make the plots!
+        for (fieldToPlot, units, productID, gateFilter) in fieldsToPlot:
+            writeToStatus("Plotting "+fieldToPlot+" "+radarFileToPlot)
+            plot_radar(radarObj, fieldToPlot, units, productID, gateFilter=gateFilter)
         remove(radarFileToPlot)
-        exit()
-    # List of fields to plot formatted as (field, unit, productID)
-    fieldsToPlot = [("Reflectivity", "dBZ", 120, None), ("Velocity", "m/s", 125, None)]
-    # Now we check to see if SQI (or "normalized coherent power") data was saved in the radar file. If available, filter reflectivity and add it back to the radar object
-    if "normalized_coherent_power" in radarObj.fields.keys():
-        sqiValid = radarObj.fields["normalized_coherent_power"]["data"]
-        sqiValid = np.where(sqiValid > 0.5, 1, 0)
-        finalRefl = np.multiply(radarObj.fields["reflectivity"]["data"], sqiValid)
-        radarObj.add_field_like("reflectivity", "reflectivity_filtered", finalRefl)
-        despekFilter = pyart.correct.despeckle_field(radarObj, "reflectivity_filtered")
-        fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
-    # Make the plots!
-    for (fieldToPlot, units, productID, gateFilter) in fieldsToPlot:
-        writeToStatus("Plotting "+fieldToPlot+" "+radarFileToPlot)
-        plot_radar(radarObj, fieldToPlot, units, productID, gateFilter=gateFilter)
-    remove(radarFileToPlot)
