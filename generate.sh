@@ -12,7 +12,13 @@ then
     rm plotcmds.txt
 fi
 
-$CONDA_PREFIX/bin/python3 adradFetch.py
+if [ -f ~/mambaforge/envs/HDWX/bin/python3 ]
+then
+    ~/mambaforge/envs/HDWX/bin/python3 adradFetch.py
+if [ -f ~/miniconda3/envs/HDWX/bin/python3 ]
+then
+    ~/miniconda3/envs/HDWX/bin/python3 adradFetch.py
+fi
 plotcmdStr=`cat plotcmds.txt`
 IFS=$'\n' plotcmdArr=($plotcmdStr)
 for plotcmd in "${plotcmdArr[@]}"
@@ -20,4 +26,11 @@ do
     eval "$plotcmd"
 done
 
-$CONDA_PREFIX/bin/python3 cleanup.py
+if [ -f ~/mambaforge/envs/HDWX/bin/python3 ]
+then
+    ~/mambaforge/envs/HDWX/bin/python3 cleanup.py
+fi
+if [ -f ~/miniconda3/envs/HDWX/bin/python3 ]
+then
+    ~/miniconda3/envs/HDWX/bin/python3 cleanup.py
+fi
