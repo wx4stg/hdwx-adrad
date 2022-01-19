@@ -5,7 +5,7 @@
 from datetime import datetime as dt
 import pyart
 from matplotlib import pyplot as plt
-from os import path, listdir, remove
+from os import path, listdir, remove, chmod
 from cartopy import crs as ccrs
 from metpy.plots import ctables
 from metpy.plots import USCOUNTIES
@@ -79,6 +79,7 @@ def writeJson(productID, scanTime, gisInfo):
     Path(path.dirname(productDictJsonPath)).mkdir(parents=True, exist_ok=True)
     with atomic_write(productDictJsonPath, overwrite=True) as jsonWrite:
         json.dump(productDict, jsonWrite, indent=4)
+    chmod(productDictJsonPath, 0o644)
     runPathExtension = scanTime.strftime("%Y/%m/%d/%H00/")
     # Now we need to write a json for the product run in output/metadata/products/<productID>/<runTime>.json
     productRunDictPath = path.join(basePath, "output", "metadata", "products", str(productID), scanTime.strftime("%Y%m%d%H00")+".json")
@@ -122,6 +123,7 @@ def writeJson(productID, scanTime, gisInfo):
     }
     with atomic_write(productRunDictPath, overwrite=True) as jsonWrite:
         json.dump(productRunDict, jsonWrite, indent=4)
+    chmod(productRunDictPath, 0o644)
     # Now we need to create a dictionary for the product type (TAMU)
     productTypeID = 1
     # Output for this json is output/metadata/productTypes/1.json
@@ -150,6 +152,8 @@ def writeJson(productID, scanTime, gisInfo):
     # Write productType dict to json
     with open(productTypeDictPath, "w") as jsonWrite:
         json.dump(productTypeDict, jsonWrite, indent=4)
+    # Ensure correct file permissions
+    chmod(productTypeDictPath, 0o644)
     
 
 def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius=160, rangeRingStep=160):
