@@ -46,8 +46,9 @@ if __name__ == '__main__':
         counter = 0
         while not path.exists("/mnt/data/ADRAD/GR2A/TAMU/dir.list"):
             counter = counter + 1
+            if counter > 6000:
+                break
             sleep(.01)
-        print(counter)
         listOfAvailable = sorted(listdir("/mnt/data/ADRAD/GR2A/TAMU/"))
     else:
         listOfAvailable = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/dir.list", verify=False)
