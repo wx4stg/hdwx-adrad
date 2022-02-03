@@ -291,8 +291,10 @@ if __name__ == "__main__":
         radarFilesToPlot = [path.join(radarDataDir, radFileName) for radFileName in sorted(listdir(radarDataDir))]
     for radarFileToPlot in radarFilesToPlot:
         # Read in the radar data
-        try: 
-            radarObj = pyart.io.read(radarFileToPlot)
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
+                radarObj = pyart.io.read(radarFileToPlot)
         except Exception as e:
             remove(radarFileToPlot)
             exit()
@@ -308,6 +310,6 @@ if __name__ == "__main__":
             fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
         # Make the plots!
         for (fieldToPlot, units, productID, gateFilter) in fieldsToPlot:
-            writeToStatus("Plotting "+fieldToPlot+" "+radarFileToPlot)
+            writeToStatus("Plotting "+fieldToPlot+" "+path.basename(radarFileToPlot))
             plot_radar(radarObj, fieldToPlot, units, productID, gateFilter=gateFilter)
         remove(radarFileToPlot)

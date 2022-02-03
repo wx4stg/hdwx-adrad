@@ -11,7 +11,7 @@ if [ -f plotcmds.txt ]
 then
     rm plotcmds.txt
 fi
-
+export PYART_QUIET=True
 if [ -f ~/mambaforge/envs/HDWX/bin/python3 ]
 then
     ~/mambaforge/envs/HDWX/bin/python3 adradFetch.py
