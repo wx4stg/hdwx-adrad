@@ -304,7 +304,7 @@ if __name__ == "__main__":
         if "normalized_coherent_power" in radarObj.fields.keys():
             sqiValid = radarObj.fields["normalized_coherent_power"]["data"]
             sqiValid = np.where(sqiValid > 0.38, 1, 0)
-            finalRefl = np.multiply(radarObj.fields["reflectivity"]["data"], sqiValid)
+            finalRefl = np.ma.masked_array(radarObj.fields["reflectivity"]["data"], mask=sqiValid)
             radarObj.add_field_like("reflectivity", "reflectivity_filtered", finalRefl)
             despekFilter = pyart.correct.despeckle_field(radarObj, "reflectivity_filtered")
             fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
