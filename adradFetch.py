@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import sys
 import shutil
+from time import sleep
 
 def writeToCmd(stringToWrite):
     if path.exists(path.join(basePath, "plotcmds.txt")):
@@ -40,7 +41,13 @@ def writeToStatus(stringToWrite):
 if __name__ == '__main__':
     basePath = path.realpath(path.dirname(__file__))
     listOfAvailable = list()
+    writeToStatus("Starting ADRAD download...")
     if path.isdir("/mnt/data/ADRAD/GR2A/TAMU/"):
+        counter = 0
+        while not path.exists("/mnt/data/ADRAD/GR2A/TAMU/dir.list"):
+            counter = counter + 1
+            sleep(.01)
+        print(counter)
         listOfAvailable = sorted(listdir("/mnt/data/ADRAD/GR2A/TAMU/"))
     else:
         listOfAvailable = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/dir.list", verify=False)
