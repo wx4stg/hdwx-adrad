@@ -4,10 +4,11 @@
 
 import requests
 from datetime import datetime as dt
-from os import path, write
+from os import path, write, listdir
 import json
 from pathlib import Path
 import sys
+import shutil
 
 def writeToCmd(stringToWrite):
     if path.exists(path.join(basePath, "plotcmds.txt")):
@@ -38,13 +39,19 @@ def writeToStatus(stringToWrite):
 
 if __name__ == '__main__':
     basePath = path.realpath(path.dirname(__file__))
-    listOfAvailable = requests.get("http://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/dir.list", verify=False)
-    availList = listOfAvailable.text.split()
+    listOfAvailable = list()
+    if path.isdir("/mnt/data/ADRAD/GR2A/TAMU/"):
+        listOfAvailable = sorted(listdir("/mnt/data/ADRAD/GR2A/TAMU/"))
+    else:
+        listOfAvailable = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/dir.list", verify=False)
+        listOfAvailable = listOfAvailable.text.split()
     outPath = path.join(basePath, "radarData")
     Path(outPath).mkdir(parents=True, exist_ok=True)
-    for availFile in availList:
+    for availFile in listOfAvailable:
         writeToStatus("Checking: "+availFile)
         if "TAMU" not in availFile:
+            continue
+        if ".TAMU" in availFile:
             continue
         dlPath = path.join(outPath, availFile)
         if path.exists(dlPath):
@@ -59,12 +66,18 @@ if __name__ == '__main__':
             if int(scanTime.strftime("%Y%m%d%H%M")) in validTimes:
                 continue
         writeToStatus("Downloading... "+availFile)
-        radarData = requests.get("http://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
-        if radarData.status_code == 200:
-            with open(dlPath, "wb") as f:
-                f.write(radarData.content)
-            writeToStatus(availFile+" Succeeded!")
+        radarData = ""
+        if path.exists("/mnt/data/ADRAD/GR2A/TAMU/"+availFile):
+            shutil.copyfile("/mnt/data/ADRAD/GR2A/TAMU/"+availFile, dlPath)
+            writeToStatus(availFile+" copied!")
             writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
         else:
-            writeToStatus(availFile+" failed "+radarData.content.decode())
+            radarData = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
+            if radarData.status_code == 200:
+                with open(dlPath, "wb") as f:
+                    f.write(radarData.content)
+                writeToStatus(availFile+" Succeeded!")
+                writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
+            else:
+                writeToStatus(availFile+" failed "+radarData.content.decode())
     
