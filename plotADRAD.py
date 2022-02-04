@@ -101,7 +101,7 @@ def writeJson(productID, scanTime, gisInfo):
         # If there are files inside, list them all
         frameNames = listdir(productRunPath)
         # get an array of integers representing the minutes past the hour of frames that have already been generated
-        frameMinutes = [int(framename.replace(".png", "")) for framename in frameNames]
+        frameMinutes = [int(framename.replace(".png", "")) for framename in frameNames if ".png" in framename]
         # Loop through the previously-generated minutes and generate metadata for each
         for frameMin in frameMinutes:
             frmDict = {
