@@ -70,7 +70,7 @@ def writeJson(productID, scanTime, gisInfo):
         "productDescription" : productDesc,
         "productPath" : productPath,
         "productReloadTime" : 60,
-        "lastReloadTime" : int(publishTime.strftime("%Y%m%d%H%M")),
+        "lastReloadTime" : publishTime.strftime("%Y%m%d%H%M"),
         "isForecast" : False,
         "isGIS" : isGIS,
         "fileExtension" : "png"
@@ -108,7 +108,7 @@ def writeJson(productID, scanTime, gisInfo):
                 "fhour" : 0, # forecast hour is 0 for non-forecasts
                 "filename" : str(frameMin)+".png",
                 "gisInfo" : gisInfo,
-                "valid" : int(scanTime.strftime("%Y%m%d%H00"))+frameMin
+                "valid" : str(int(scanTime.strftime("%Y%m%d%H00"))+frameMin)
             }
             # If this dictionary isn't already in the framesArray, add it
             if frmDict not in framesArray:
@@ -119,7 +119,7 @@ def writeJson(productID, scanTime, gisInfo):
         "runName" : scanTime.strftime("%d %b %Y %HZ"),
         "availableFrameCount" : len(framesArray),
         "totalFrameCount" : len(framesArray),
-        "productFrames" : sorted(framesArray, key=lambda dict: dict["valid"]) # productFramesArray, sorted by increasing valid Time
+        "productFrames" : sorted(framesArray, key=lambda dict: int(dict["valid"])) # productFramesArray, sorted by increasing valid Time
     }
     with atomic_write(productRunDictPath, overwrite=True) as jsonWrite:
         json.dump(productRunDict, jsonWrite, indent=4)

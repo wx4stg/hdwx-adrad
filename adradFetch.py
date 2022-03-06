@@ -71,7 +71,7 @@ if __name__ == '__main__':
                 runData = json.load(jsonRead)
             validTimes = list()
             [validTimes.append(productFrame["valid"]) for productFrame in runData["productFrames"]]
-            if int(scanTime.strftime("%Y%m%d%H%M")) in validTimes:
+            if scanTime.strftime("%Y%m%d%H%M") in validTimes:
                 continue
         writeToStatus("Downloading... "+availFile)
         radarData = ""
