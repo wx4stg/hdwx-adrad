@@ -18,13 +18,9 @@ then
     rm plotcmds.txt
 fi
 export PYART_QUIET=True
-if [ -f ~/mambaforge/envs/$condaEnvName/bin/python3 ]
+if [ -f $condaRootPath/envs/$condaEnvName/bin/python3 ]
 then
-    ~/mambaforge/envs/$condaEnvName/bin/python3 adradFetch.py
-fi
-if [ -f ~/miniconda3/envs/$condaEnvName/bin/python3 ]
-then
-    ~/miniconda3/envs/$condaEnvName/bin/python3 adradFetch.py
+    $condaRootPath/envs/$condaEnvName/bin/python3 adradFetch.py
 fi
 plotcmdStr=`cat plotcmds.txt`
 IFS=$'\n' plotcmdArr=($plotcmdStr)
@@ -33,11 +29,7 @@ do
     eval "$plotcmd"
 done
 
-if [ -f ~/mambaforge/envs/$condaEnvName/bin/python3 ]
+if [ -f $condaRootPath/envs/$condaEnvName/bin/python3 ]
 then
-    ~/mambaforge/envs/$condaEnvName/bin/python3 cleanup.py
-fi
-if [ -f ~/miniconda3/envs/$condaEnvName/bin/python3 ]
-then
-    ~/miniconda3/envs/$condaEnvName/bin/python3 cleanup.py
+    $condaRootPath/envs/$condaEnvName/bin/python3 cleanup.py
 fi
