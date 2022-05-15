@@ -204,6 +204,10 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     writeJson(productID, radarScanDT, gisInfo)
     # Add counties
     ax.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
+    # Now we force 1920x1080
+    fig.set_size_inches(1920*px, 1080*px)
+    # Force ax to expand to figure
+    ax.set_box_aspect(9/16)
     # Give our plot a title, we'll start with an emtpy string
     infoString = str()
     # Instrument name can sometimes be bytes or string, so try to decode it, then add it to the title string
@@ -234,24 +238,29 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
         maxRange = np.round(np.max(radar.instrument_parameters["unambiguous_range"]["data"])/1000, 0)
         infoString = infoString + "    Max Range: " + str(maxRange) + " km\n"
     # Add scan time
-    infoString = infoString + pyart.util.datetime_from_radar(radar).strftime("%d %b %Y %H:%M:%S UTC")
-    # Set title string
-    ax.set_title(infoString)
+    infoString = infoString + "Valid " + pyart.util.datetime_from_radar(radar).strftime("%d %b %Y %H:%M:%S UTC")
     # Create custom colorbar
-    cbax = fig.add_axes([ax.get_position().x0, 0.075, (ax.get_position().width/3), .02])
+    cbax = fig.add_axes([.01,0.065,(ax.get_position().width/3),.02])
     fig.colorbar(plotHandle, cax=cbax, orientation="horizontal", extend="neither")
     cbax.set_xlabel(fieldToPlot.replace("_", " ")+" ("+units+")")
+    # Create title axes
+    tax = fig.add_axes([ax.get_position().x0+cbax.get_position().width+.01,0.03,(ax.get_position().width/3),.045])
+    title = tax.text(0.5, 0.5, infoString, horizontalalignment="center", verticalalignment="center", fontsize=14)
+    plt.setp(tax.spines.values(), visible=False)
+    tax.tick_params(left=False, labelleft=False)
+    tax.tick_params(bottom=False, labelbottom=False)
+    tax.set_xlabel("Python HDWX -- Send bugs to stgardner4@tamu.edu")
     # Create custom logo axes
-    lax = fig.add_axes([ax.get_position().x0+2*(ax.get_position().width/3), 0.015, (ax.get_position().width/3), .1])
+    lax = fig.add_axes([(.99-(ax.get_position().width/3)),0,(ax.get_position().width/3),.08])
     lax.set_aspect(2821/11071)
     plt.setp(lax.spines.values(), visible=False)
     lax.tick_params(left=False, labelleft=False)
     lax.tick_params(bottom=False, labelbottom=False)
-    lax.set_xlabel("Plot by Sam Gardner")
     atmoLogo = mpimage.imread("assets/atmoLogo.png")
     lax.imshow(atmoLogo)
-    # Force image size to 1808p
-    fig.set_size_inches(1920*px, 1080*px)
+    # Move ax for optimal spacing
+    ax.set_position([.005, cbax.get_position().y0+cbax.get_position().height+.005, .99, (.99-(cbax.get_position().y0+cbax.get_position().height))])
+    # Save image
     staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
     fig.savefig(staticSaveLocation)
@@ -295,6 +304,8 @@ if __name__ == "__main__":
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")
                 radarObj = pyart.io.read(radarFileToPlot)
+                if len(sys.argv) <= 1:
+                    requestedDatetime = pyart.util.datetime_from_radar(radarObj)
         except Exception as e:
             remove(radarFileToPlot)
             exit()
