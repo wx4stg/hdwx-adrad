@@ -107,7 +107,7 @@ def writeJson(productID, scanTime, gisInfo):
         for frameMin in frameMinutes:
             frmDict = {
                 "fhour" : 0, # forecast hour is 0 for non-forecasts
-                "filename" : str(frameMin)+".png",
+                "filename" : str(frameMin).zfill(2)+".png",
                 "gisInfo" : gisInfo,
                 "valid" : str(int(scanTime.strftime("%Y%m%d%H00"))+frameMin)
             }
