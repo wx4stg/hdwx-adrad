@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Next-gen HDWX radar plotting script
+# python-based HDWX radar plotting script
 # Created 7 July 2021 by Sam Gardner <stgardner4@tamu.edu>
 
 from datetime import datetime as dt
