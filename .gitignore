@@ -2,3 +2,4 @@ output/
 radarData/
 status.txt
 plotcmds.txt
+HDWX_helpers.py
