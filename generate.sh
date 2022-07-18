@@ -41,3 +41,4 @@ if [ -f $condaRootPath/envs/$condaEnvName/bin/python3 ]
 then
     $condaRootPath/envs/$condaEnvName/bin/python3 cleanup.py
 fi
+rm status.txt
