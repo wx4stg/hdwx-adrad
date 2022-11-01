@@ -120,58 +120,15 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Add max range, if available
     if "unambiguous_range" in radar.instrument_parameters:
         maxRange = np.round(np.max(radar.instrument_parameters["unambiguous_range"]["data"])/1000, 0)
-        infoString = infoString + "    Max Range: " + str(maxRange) + " km\n"
-    # Add scan time
-    infoString = infoString + "Valid " + pyart.util.datetime_from_radar(radar).strftime("%d %b %Y %H:%M:%S UTC")
-    # Create custom colorbar
-    cbax = fig.add_axes([.01,0.065,(ax.get_position().width/3),.02])
-    fig.colorbar(plotHandle, cax=cbax, orientation="horizontal", extend="neither")
-    cbax.set_xlabel(fieldToPlot.replace("_", " ")+" ("+units+")")
-    # Create title axes
-    tax = fig.add_axes([ax.get_position().x0+cbax.get_position().width+.01,0.03,(ax.get_position().width/3),.045])
-    title = tax.text(0.5, 0.5, infoString, horizontalalignment="center", verticalalignment="center", fontsize=14)
-    plt.setp(tax.spines.values(), visible=False)
-    tax.tick_params(left=False, labelleft=False)
-    tax.tick_params(bottom=False, labelbottom=False)
-    tax.set_xlabel("Python HDWX -- Send bugs to stgardner4@tamu.edu")
-    # Create custom logo axes
-    lax = fig.add_axes([(.99-(ax.get_position().width/3)),0,(ax.get_position().width/3),.08])
-    lax.set_aspect(2821/11071)
-    plt.setp(lax.spines.values(), visible=False)
-    lax.tick_params(left=False, labelleft=False)
-    lax.tick_params(bottom=False, labelbottom=False)
-    atmoLogo = mpimage.imread("assets/atmoLogo.png")
-    lax.imshow(atmoLogo)
-    # Move ax for optimal spacing
-    ax.set_position([.005, cbax.get_position().y0+cbax.get_position().height+.005, .99, (.99-(cbax.get_position().y0+cbax.get_position().height))])
+        infoString = infoString + "    Max Range: " + str(maxRange) + " km"
+    if hasHelpers:
+        HDWX_helpers.dressImage(fig, ax, infoString, pyart.util.datetime_from_radar(radar), plotHandle=plotHandle, colorbarLabel=fieldToPlot.replace("_", " ")+" ("+units+")")
     # Save image
     staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
     fig.savefig(staticSaveLocation)
     if hasHelpers:
         HDWX_helpers.writeJson(basePath, productID+1, radarScanDT, path.basename(staticSaveLocation), radarScanDT, ["0,0", "0,0"], 60)
-    if productID == 122:
-        sqiFig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw=dict(projection=ccrs.epsg(3857)))
-        sqicmap = plt.get_cmap("rainbow")
-        ADRADMapDisplay.plot_ppi_map("reflectivity", norm=norm, cmap=cmap, title_flag=True, colorbar_flag=False, ax=ax1, fig=sqiFig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=None, embellish=True)
-        reflHandle = ax1.get_children()[0]
-        ax1.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
-        cbax1 = sqiFig.add_axes([ax1.get_position().x0, 0.075, (ax1.get_position().width/3), .02])
-        sqiFig.colorbar(reflHandle, cax=cbax1, orientation="horizontal")
-        cbax1.set_xlabel("Reflectivity (dBZ)")
-        ADRADMapDisplay.plot_ppi_map("normalized_coherent_power", mask_tuple=("reflectivity", 1), vmin=0, vmax=1, cmap=sqicmap, title_flag=True, colorbar_flag=False, ax=ax2, fig=sqiFig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=None, embellish=True)
-        sqiHandle = ax2.get_children()[0]
-        ax2.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
-        cbax2 = sqiFig.add_axes([ax2.get_position().x0, 0.075, (ax2.get_position().width/3), .02])
-        sqiFig.colorbar(sqiHandle, cax=cbax2, orientation="horizontal")
-        cbax2.set_xlabel("Signal Quality Index")
-        sqiFig.set_size_inches(1920*px, 1080*px)
-        staticSQICompSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+2), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
-        Path(path.dirname(staticSQICompSaveLocation)).mkdir(parents=True, exist_ok=True)
-        sqiFig.savefig(staticSQICompSaveLocation)
-        if hasHelpers:
-            HDWX_helpers.writeJson(basePath, productID+2, radarScanDT, path.basename(staticSaveLocation), radarScanDT, ["0,0", "0,0"], 60)
-        plt.close(sqiFig)
     plt.close(fig)
 
 if __name__ == "__main__":
