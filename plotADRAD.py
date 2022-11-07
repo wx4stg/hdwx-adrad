@@ -5,17 +5,14 @@
 from datetime import datetime as dt
 import pyart
 from matplotlib import pyplot as plt
-from os import path, listdir, remove, chmod
+from os import path, listdir, remove
 from cartopy import crs as ccrs
-from metpy.plots import ctables
 from metpy.plots import USCOUNTIES
 import numpy as np
 import warnings
-from matplotlib import image as mpimage
+from matplotlib import colors as pltcolors
 import sys
 from pathlib import Path
-from atomicwrites import atomic_write
-import json
 
 # plotADRAD.py <scantime>
 # Get the path to this script, that'll get used a lot.
@@ -47,18 +44,23 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     px = 1/plt.rcParams["figure.dpi"]
     # Give the image a reasonable size. The GIS-aware image will not be exactly 1920 by 1080, as it'll be trimmed when we set the extent, and the static image will have to be sized again later to for proper sizing, but this will give us a reasonably large image.
     fig.set_size_inches(1920*px, 1080*px)
-    # Get MetPy's NWS colortable
+    # Get colorblind-friendly color table
     if "reflectivity" in fieldToPlot.lower():
-        norm, cmap = ctables.registry.get_with_steps("NWSReflectivity", 5, 5)
+        specR = plt.cm.Spectral_r(np.linspace(0, 0.95, 200))
+        pink = plt.cm.PiYG(np.linspace(0, 0.25, 40))
+        purple = plt.cm.PRGn(np.linspace(0, 0.25, 40))
+        cArr = np.vstack((specR, pink, purple))
+        cmap = pltcolors.LinearSegmentedColormap.from_list("cvd-reflectivity", cArr)
+        vmin=10
+        vmax=80
     elif "velocity" in fieldToPlot.lower():
-        norm, cmap = ctables.registry.get_with_steps("NWS8bitVel", 5, 5)
-        norm = None
-    cmap.set_under("#00000000")
-    cmap.set_over("black")
+        cmap = "pyart_balance"
+        vmin=-30
+        vmax=30
     # Plot the data
     ADRADMapDisplay = pyart.graph.RadarMapDisplay(radar)
     # I want to create a custom colorbar/embellishments/title later, so disable those for now
-    ADRADMapDisplay.plot_ppi_map(fieldToPlot.lower(), norm=norm, cmap=cmap, title_flag=False, colorbar_flag=False, ax=ax, fig=fig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=gateFilter, embellish=False)
+    ADRADMapDisplay.plot_ppi_map(fieldToPlot.lower(), cmap=cmap, vmin=vmin, vmax=vmax, title_flag=False, colorbar_flag=False, ax=ax, fig=fig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=gateFilter, embellish=False)
     # Get a handle to the pcolormesh which will be used to generate our colorbar later
     plotHandle = ax.get_children()[0]
     # Plot range rings
