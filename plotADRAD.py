@@ -47,8 +47,8 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Get colorblind-friendly color table
     if "reflectivity" in fieldToPlot.lower():
         specR = plt.cm.Spectral_r(np.linspace(0, 0.95, 200))
-        pink = plt.cm.PiYG(np.linspace(0, 0.25, 40))
-        purple = plt.cm.PRGn(np.linspace(0, 0.25, 40))
+        pink = plt.cm.PiYG_r(np.linspace(0.75, 1, 40))
+        purple = plt.cm.PRGn_r(np.linspace(0.75, 1, 40))
         cArr = np.vstack((specR, pink, purple))
         cmap = pltcolors.LinearSegmentedColormap.from_list("cvd-reflectivity", cArr)
         vmin=10
