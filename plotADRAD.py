@@ -46,7 +46,7 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     fig.set_size_inches(1920*px, 1080*px)
     # Get colorblind-friendly color table
     if "reflectivity" in fieldToPlot.lower():
-        specR = plt.cm.Spectral_r(np.linspace(0, 0.95, 200))
+        specR = plt.cm.Spectral_r(np.linspace(0, 1, 200))
         pink = plt.cm.PiYG(np.linspace(0, 0.25, 40))
         purple = plt.cm.PRGn_r(np.linspace(0.75, 1, 40))
         cArr = np.vstack((specR, pink, purple))
