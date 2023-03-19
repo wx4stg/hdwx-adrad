@@ -80,7 +80,10 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     Path(path.dirname(gisSaveLocation)).mkdir(parents=True, exist_ok=True)
     # Save GIS Image
     extent = ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
+    if hasHelpers:
+        HDWX_helpers.saveImage(fig, gisSaveLocation, transparent=True, bbox_inches=extent)
+    else:
+        fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
     # Get lat/lon bounds for metadata
     point1 = ccrs.PlateCarree().transform_point(ax.get_extent()[0], ax.get_extent()[2], ccrs.epsg(3857))
     point2 = ccrs.PlateCarree().transform_point(ax.get_extent()[1], ax.get_extent()[3], ccrs.epsg(3857))
@@ -128,9 +131,11 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Save image
     staticSaveLocation = path.join(outputBase, "products", "radar", "ADRAD", str(productID+1), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
     Path(path.dirname(staticSaveLocation)).mkdir(parents=True, exist_ok=True)
-    fig.savefig(staticSaveLocation)
     if hasHelpers:
+        HDWX_helpers.saveImage(fig, staticSaveLocation)
         HDWX_helpers.writeJson(basePath, productID+1, radarScanDT, path.basename(staticSaveLocation), radarScanDT, ["0,0", "0,0"], 60)
+    else:
+        fig.savefig(staticSaveLocation)
     plt.close(fig)
 
 if __name__ == "__main__":
