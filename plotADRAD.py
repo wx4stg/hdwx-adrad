@@ -56,7 +56,7 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
     # Plot the data
     ADRADMapDisplay = pyart.graph.RadarMapDisplay(radar)
     # I want to create a custom colorbar/embellishments/title later, so disable those for now
-    ADRADMapDisplay.plot_ppi_map(fieldToPlot.lower(), cmap=cmap, vmin=vmin, vmax=vmax, title_flag=False, colorbar_flag=False, ax=ax, fig=fig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=gateFilter, embellish=False)
+    ADRADMapDisplay.plot_ppi_map(fieldToPlot.lower(), cmap=cmap, vmin=vmin, vmax=vmax, title_flag=False, colorbar_flag=False, add_grid_lines=False, ax=ax, fig=fig, width=2*plotRadius*1000, height=2*plotRadius*1000, gatefilter=gateFilter, embellish=False)
     # Get a handle to the pcolormesh which will be used to generate our colorbar later
     plotHandle = ax.get_children()[0]
     # Plot range rings
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                     requestedDatetime = pyart.util.datetime_from_radar(radarObj)
         except Exception as e:
             remove(radarFileToPlot)
-            exit()
+            continue
         # List of fields to plot formatted as (field, unit, productID)
         fieldsToPlot = [("Reflectivity", "dBZ", 120, None), ("Velocity", "m/s", 125, None)]
         # Now we check to see if SQI (or "normalized coherent power") data was saved in the radar file. If available, filter reflectivity and add it back to the radar object
