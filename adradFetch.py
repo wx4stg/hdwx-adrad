@@ -4,59 +4,35 @@
 
 import requests
 from datetime import datetime as dt
-from os import path, write, listdir
+from os import path, listdir
 import json
 from pathlib import Path
 import sys
 import shutil
 from time import sleep
-
-def writeToCmd(stringToWrite):
-    if path.exists(path.join(basePath, "plotcmds.txt")):
-        currentCmdFile = open(path.join(basePath, "plotcmds.txt"), "r")
-        currentStr = open(path.join(basePath, "plotcmds.txt"), "r").read()
-        currentCmdFile.close()
-    else:
-        currentStr = ""
-    if stringToWrite not in currentStr:
-        with open(path.join(basePath, "plotcmds.txt"), "a") as cmdw:
-            cmdw.write(stringToWrite)
-            cmdw.close()
-
-def writeToStatus(stringToWrite):
-    print(stringToWrite)
-    stringToWrite = stringToWrite+"\n"
-    if path.exists(path.join(basePath, "status.txt")):
-        currentStatusFile = open(path.join(basePath, "status.txt"), "r")
-        currentStr = open(path.join(basePath, "status.txt"), "r").read()
-        currentStatusFile.close()
-    else:
-        currentStr = ""
-    if stringToWrite not in currentStr:
-        with open(path.join(basePath, "status.txt"), "a") as statw:
-            statw.write(stringToWrite)
-            statw.close()
+import subprocess
 
 
 if __name__ == '__main__':
     basePath = path.realpath(path.dirname(__file__))
+    didPlotSomething = False
     listOfAvailable = list()
-    writeToStatus("Starting ADRAD download...")
-    if path.isdir("/mnt/data/ADRAD/GR2A/TAMU/"):
+    print("Starting ADRAD download...")
+    if path.isdir("/mnt/data/GR2A/TAMU/"):
         counter = 0
-        while not path.exists("/mnt/data/ADRAD/GR2A/TAMU/dir.list"):
+        while not path.exists("/mnt/data/GR2A/TAMU/dir.list"):
             counter = counter + 1
             if counter > 6000:
                 break
             sleep(.01)
-        listOfAvailable = sorted(listdir("/mnt/data/ADRAD/GR2A/TAMU/"))
+        listOfAvailable = sorted(listdir("/mnt/data/GR2A/TAMU/"))
     else:
         listOfAvailable = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/dir.list", verify=False)
         listOfAvailable = listOfAvailable.text.split()
     outPath = path.join(basePath, "radarData")
     Path(outPath).mkdir(parents=True, exist_ok=True)
     for availFile in listOfAvailable:
-        writeToStatus("Checking: "+availFile)
+        print("Checking: "+availFile)
         if "TAMU" not in availFile:
             continue
         if ".TAMU" in availFile:
@@ -73,19 +49,22 @@ if __name__ == '__main__':
             [validTimes.append(productFrame["valid"]) for productFrame in runData["productFrames"]]
             if scanTime.strftime("%Y%m%d%H%M") in validTimes:
                 continue
-        writeToStatus("Downloading... "+availFile)
+        print("Downloading... "+availFile)
         radarData = ""
-        if path.exists("/mnt/data/ADRAD/GR2A/TAMU/"+availFile):
-            shutil.copyfile("/mnt/data/ADRAD/GR2A/TAMU/"+availFile, dlPath)
-            writeToStatus(availFile+" copied!")
-            writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
+        if path.exists("/mnt/data/GR2A/TAMU/"+availFile):
+            shutil.copyfile("/mnt/data/GR2A/TAMU/"+availFile, dlPath)
+            print(availFile+" copied!")
+            subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
+            didPlotSomething = True
         else:
             radarData = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
             if radarData.status_code == 200:
                 with open(dlPath, "wb") as f:
                     f.write(radarData.content)
-                writeToStatus(availFile+" Succeeded!")
-                writeToCmd(sys.executable+" "+path.join(basePath, "plotADRAD.py")+" "+scanTime.strftime("%Y%m%d%H%M")+"\n")
+                print(availFile+" Succeeded!")
+                subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
+                didPlotSomething = True
             else:
-                writeToStatus(availFile+" failed "+radarData.content.decode())
-    
+                print(availFile+" failed "+radarData.content.decode())
+    if didPlotSomething == False:
+        sleep(30)

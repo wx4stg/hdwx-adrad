@@ -1,0 +1,15 @@
+[Unit]
+Description=hdwx-adrad_plot
+PartOf=hdwx.target
+
+[Service]
+ExecStart=$pathToPython adradFetch.py
+Restart=always
+RestartSec=5
+RuntimeMaxSec=600
+WorkingDirectory=$pathToClone/hdwx-adrad/
+User=$myUsername
+SyslogIdentifier=hdwx-adrad_plot
+
+[Install]
+WantedBy=hdwx.target

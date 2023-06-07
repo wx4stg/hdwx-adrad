@@ -1,0 +1,14 @@
+[Unit]
+Description=hdwx-adrad_rsync
+PartOf=hdwx.target
+
+[Service]
+ExecStart=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.tmp"
+Restart=always
+RestartSec=5
+WorkingDirectory=$pathToClone/hdwx-adrad/
+User=$myUsername
+SyslogIdentifier=hdwx-adrad_rsync
+
+[Install]
+WantedBy=hdwx.target

@@ -22,20 +22,6 @@ if path.exists(path.join(basePath, "HDWX_helpers.py")):
     import HDWX_helpers
     hasHelpers = True
 
-def writeToStatus(stringToWrite):
-    print(stringToWrite)
-    stringToWrite = stringToWrite+"\n"
-    if path.exists(path.join(basePath, "status.txt")):
-        currentStatusFile = open(path.join(basePath, "status.txt"), "r")
-        currentStr = open(path.join(basePath, "status.txt"), "r").read()
-        currentStatusFile.close()
-    else:
-        currentStr = ""
-    if stringToWrite not in currentStr:
-        with open(path.join(basePath, "status.txt"), "a") as statw:
-            statw.write(stringToWrite)
-            statw.close()
-
 def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius=160, rangeRingStep=160):
     # Create figure and axes
     fig = plt.figure()
@@ -168,6 +154,6 @@ if __name__ == "__main__":
             fieldsToPlot.append(("Reflectivity_Filtered", "dBZ", 122, despekFilter))
         # Make the plots!
         for (fieldToPlot, units, productID, gateFilter) in fieldsToPlot:
-            writeToStatus("Plotting "+fieldToPlot+" "+path.basename(radarFileToPlot))
+            print("Plotting "+fieldToPlot+" "+path.basename(radarFileToPlot))
             plot_radar(radarObj, fieldToPlot, units, productID, gateFilter=gateFilter)
         remove(radarFileToPlot)
