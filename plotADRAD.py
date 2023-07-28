@@ -56,23 +56,24 @@ def plot_radar(radar, fieldToPlot, units, productID, gateFilter=None, plotRadius
         radarScanDT = pyart.util.datetime_from_radar(radar)
     else:
         radarScanDT = requestedDatetime
-    # output/gisproducts/radar/ADRAD/productID/<year>/<month>/<day>/<hour>00/<minute>.png
-    gisSaveLocation = path.join(outputBase, "gisproducts", "radar", "ADRAD", str(productID), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
-    # Create parent directory if it doesn't already exist
-    Path(path.dirname(gisSaveLocation)).mkdir(parents=True, exist_ok=True)
-    # Save GIS Image
-    extent = ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.dpi_scale_trans.inverted())
-    if hasHelpers:
-        HDWX_helpers.saveImage(fig, gisSaveLocation, transparent=True, bbox_inches=extent)
-    else:
-        fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
-    # Get lat/lon bounds for metadata
-    point1 = ccrs.PlateCarree().transform_point(ax.get_extent()[0], ax.get_extent()[2], ccrs.epsg(3857))
-    point2 = ccrs.PlateCarree().transform_point(ax.get_extent()[1], ax.get_extent()[3], ccrs.epsg(3857))
-    gisInfo = [str(point1[1])+","+str(point1[0]), str(point2[1])+","+str(point2[0])]
-    # Write metadata for GIS Image
-    if hasHelpers:
-        HDWX_helpers.writeJson(basePath, productID, radarScanDT, path.basename(gisSaveLocation), radarScanDT, gisInfo, 60)
+    if "--no-gis" not in sys.argv:
+        # output/gisproducts/radar/ADRAD/productID/<year>/<month>/<day>/<hour>00/<minute>.png
+        gisSaveLocation = path.join(outputBase, "gisproducts", "radar", "ADRAD", str(productID), radarScanDT.strftime("%Y"), radarScanDT.strftime("%m"), radarScanDT.strftime("%d"), radarScanDT.strftime("%H00"), radarScanDT.strftime("%M.png"))
+        # Create parent directory if it doesn't already exist
+        Path(path.dirname(gisSaveLocation)).mkdir(parents=True, exist_ok=True)
+        # Save GIS Image
+        extent = ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.dpi_scale_trans.inverted())
+        if hasHelpers:
+            HDWX_helpers.saveImage(fig, gisSaveLocation, transparent=True, bbox_inches=extent)
+        else:
+            fig.savefig(gisSaveLocation, transparent=True, bbox_inches=extent)
+        # Get lat/lon bounds for metadata
+        point1 = ccrs.PlateCarree().transform_point(ax.get_extent()[0], ax.get_extent()[2], ccrs.epsg(3857))
+        point2 = ccrs.PlateCarree().transform_point(ax.get_extent()[1], ax.get_extent()[3], ccrs.epsg(3857))
+        gisInfo = [str(point1[1])+","+str(point1[0]), str(point2[1])+","+str(point2[0])]
+        # Write metadata for GIS Image
+        if hasHelpers:
+            HDWX_helpers.writeJson(basePath, productID, radarScanDT, path.basename(gisSaveLocation), radarScanDT, gisInfo, 60)
     # Add counties
     ax.add_feature(USCOUNTIES.with_scale("5m"), edgecolor="gray")
     # Now we force 1920x1080

@@ -54,7 +54,10 @@ if __name__ == '__main__':
         if path.exists("/mnt/data/GR2A/TAMU/"+availFile):
             shutil.copyfile("/mnt/data/GR2A/TAMU/"+availFile, dlPath)
             print(availFile+" copied!")
-            subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
+            if "--no-gis" in sys.argv:
+                subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M"), "--no-gis"])
+            else:
+                subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
             didPlotSomething = True
         else:
             radarData = requests.get("https://wdi.geos.tamu.edu/data/ADRAD/GR2A/TAMU/"+availFile, verify=False)
@@ -62,7 +65,10 @@ if __name__ == '__main__':
                 with open(dlPath, "wb") as f:
                     f.write(radarData.content)
                 print(availFile+" Succeeded!")
-                subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
+                if "--no-gis" in sys.argv:
+                    subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M"), "--no-gis"])
+                else:
+                    subprocess.run([sys.executable, "plotADRAD.py", scanTime.strftime("%Y%m%d%H%M")])
                 didPlotSomething = True
             else:
                 print(availFile+" failed "+radarData.content.decode())
