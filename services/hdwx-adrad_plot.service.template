@@ -3,7 +3,7 @@ Description=hdwx-adrad_plot
 PartOf=hdwx.target
 
 [Service]
-ExecStart=$pathToPython adradFetch.py
+ExecStart=$pathToPython adradFetch.py $shouldGIS
 Restart=always
 RestartSec=5
 RuntimeMaxSec=600
