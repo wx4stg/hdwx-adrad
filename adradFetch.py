@@ -41,7 +41,7 @@ if __name__ == '__main__':
         if path.exists(dlPath):
             continue
         scanTime = dt.strptime(availFile, "TAMU_%Y%m%d_%H%M")
-        metadataPath = path.join(basePath, "output", "metadata", "products", "120", scanTime.strftime("%Y%m%d%H00")+".json")
+        metadataPath = path.join(basePath, "output", "metadata", "products", "121", scanTime.strftime("%Y%m%d%H00")+".json")
         if path.exists(metadataPath):
             with open(metadataPath, "r") as jsonRead:
                 runData = json.load(jsonRead)
