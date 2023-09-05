@@ -6,6 +6,7 @@ PartOf=hdwx.target
 ExecStart=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.tmp"
 Restart=always
 RestartSec=5
+RuntimeMaxSec=600
 WorkingDirectory=$pathToClone/hdwx-adrad/
 User=$myUsername
 SyslogIdentifier=hdwx-adrad_rsync
